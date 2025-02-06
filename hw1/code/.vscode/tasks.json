@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build with Clang",  // 任务名称
+        "type": "shell",
+        "command": "clang++",         // 使用 Clang 编译器
+        "args": [
+          "-std=c++17",               // C++ 标准
+          "-g",                       // 生成调试信息
+          "${file}",                  // 当前文件
+          "-o",                       // 输出文件
+          "${fileDirname}/${fileBasenameNoExtension}"  // 可执行文件路径
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": ["$gcc"],
+        "detail": "Generated task by VSCode"
+      }
+    ]
+  }
