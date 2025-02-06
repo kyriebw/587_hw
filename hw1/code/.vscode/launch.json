@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug with LLDB",  // 调试配置名称
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${fileDirname}/${fileBasenameNoExtension}",  // 可执行文件路径
+        "args": [],  // 调试参数
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb",  // 使用 LLDB 调试器
+        "preLaunchTask": "Build with Clang"  // 调试前运行的任务
+      }
+    ]
+  }
