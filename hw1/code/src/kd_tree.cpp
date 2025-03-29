@@ -30,12 +30,14 @@ void KDTree::knn_search_recursive(KDNode* node, const POI& target, int k, int de
 
     double dist = euclidean_distance(node->point, target);
 
-    if ((int)max_heap.size() < k || dist < max_heap.top().first) {
-    max_heap.push({dist, node->point});
-    if ((int)max_heap.size() > k) {
-        max_heap.pop(); 
+    if (node->point.id != target.id) {
+        if ((int)max_heap.size() < k || dist < max_heap.top().first) {
+            max_heap.push({dist, node->point});
+            if ((int)max_heap.size() > k) {
+                max_heap.pop();
+            }
+        }
     }
-}
 
     int axis = depth % 2;
     double diff = (axis == 0) ? (target.lat - node->point.lat) : (target.lon - node->point.lon);
@@ -58,14 +60,17 @@ std::vector<POI> KDTree::knn_search(const POI& target, int k) {
         results.push_back(max_heap.top().second);
         max_heap.pop();
     }
+    std::reverse(results.begin(), results.end());
     return results;
 }
 
 void KDTree::range_search_recursive(KDNode* node, const POI& target, double radius, int depth, std::vector<POI>& results) {
     if (!node) return;
 
-    if (euclidean_distance(node->point, target) <= radius) {
-        results.push_back(node->point);
+    if (node->point.id != target.id) {
+        if (euclidean_distance(node->point, target) <= radius) {
+            results.push_back(node->point);
+        }
     }
 
     int axis = depth % 2;

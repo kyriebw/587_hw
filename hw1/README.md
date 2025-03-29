@@ -21,6 +21,7 @@ I used Clang to compile my homework, which was primarily completed using C++17, 
 
    ```bash
    cd build
+   rm -rf *
    cmake ..
    make dc       # which means data clean
    ```
@@ -49,3 +50,5 @@ I used Clang to compile my homework, which was primarily completed using C++17, 
    ```
 
    Finally you will have figures in `fig` folder.
+
+6. My results are in `data` and `fig` folder

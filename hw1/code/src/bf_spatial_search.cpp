@@ -7,7 +7,7 @@
 #include <chrono>
 #include <map>
 
-#define MAX_DATASET_SIZE 1630237
+#define MAX_DATASET_SIZE 1630238
 
 struct POI {
     long long id;
@@ -38,7 +38,15 @@ std::vector<POI> read_csv(const std::string &filename) {
         std::getline(ss, name);
 
         if (!id_str.empty() && !lat_str.empty() && !lon_str.empty()) {
-            dataset.push_back({std::stoll(id_str), std::stod(lat_str), std::stod(lon_str)});
+            try {
+                long long id = static_cast<long long>(std::stoull(id_str));
+                double lat = std::stod(lat_str);
+                double lon = std::stod(lon_str);
+
+                dataset.push_back({id, lat, lon});
+            } catch (const std::exception &e) {
+                std::cerr << "Error parsing line: " << line << " - " << e.what() << std::endl;
+            }
         }
     }
 
@@ -46,33 +54,47 @@ std::vector<POI> read_csv(const std::string &filename) {
     return dataset;
 }
 
-std::vector<std::pair<POI, double>> knn_linear_search(const std::vector<POI> &dataset, int target_id, int k) {
+std::vector<std::pair<POI, double>> knn_linear_search(const std::vector<POI> &dataset, long long target_id, int k) {
     std::vector<std::pair<POI, double>> distances;
     POI target;
+    bool found = false;
 
     for (const auto &poi : dataset) {
         if (poi.id == target_id) {
             target = poi;
+            found = true;
             break;
         }
+    }
+
+    if (!found) {
+        std::cerr << "Error: Target ID " << target_id << " not found in dataset.\n";
+        return {};
     }
 
     for (const auto &poi : dataset) {
         if (poi.id != target_id) {
             double dist = euclidean_distance(target, poi);
-            distances.push_back({poi, dist});
+            distances.emplace_back(poi, dist);
         }
     }
 
-    std::nth_element(distances.begin(), distances.begin() + k, distances.end(),
-                     [](const auto &a, const auto &b) {
-                         return a.second < b.second;
-                     });
-
-    distances.resize(k);
+    if ((int)distances.size() > k) {
+        std::partial_sort(distances.begin(), distances.begin() + k, distances.end(),
+                          [](const auto &a, const auto &b) {
+                              return a.second < b.second;
+                          });
+        distances.resize(k);
+    } else {
+        std::sort(distances.begin(), distances.end(),
+                  [](const auto &a, const auto &b) {
+                      return a.second < b.second;
+                  });
+    }
 
     return distances;
 }
+
 
 std::vector<POI> range_query_linear_search(const std::vector<POI> &dataset, int target_id, double radius) {
     std::vector<POI> results;
@@ -104,25 +126,41 @@ void run_tests(const std::vector<POI> &dataset) {
 
     for (int N : N_values) {
         std::vector<POI> subset(dataset.begin(), dataset.begin() + N);
-        int target_id = subset[N / 2].id;
+        long long target_id = subset[N / 2].id;
 
         std::vector<double> times_knn, times_range;
 
         for (int k : k_values) {
             auto start = std::chrono::high_resolution_clock::now();
-            knn_linear_search(subset, target_id, k);
+            auto ans = knn_linear_search(subset, target_id, k);
             auto end = std::chrono::high_resolution_clock::now();
             double duration_knn = std::chrono::duration<double, std::milli>(end - start).count();
             times_knn.push_back(duration_knn);
+            if (k == 5 && N == MAX_DATASET_SIZE) {
+                // std::cout << subset[N / 2].lat << "," << subset[N / 2].lon << std::endl;
+                std::cout << "kNN results of " << target_id << " for BF (k = " << k << ", N = " << N << "): ";
+                for (const auto &pair : ans) {
+                    std::cout << pair.first.id << " ";
+                }
+                std::cout << std::endl;
+            }
         }
         knn_times[N] = times_knn;
 
         for (double r : r_values) {
             auto start = std::chrono::high_resolution_clock::now();
-            range_query_linear_search(subset, target_id, r);
+            auto ans = range_query_linear_search(subset, target_id, r);
             auto end = std::chrono::high_resolution_clock::now();
             double duration_range = std::chrono::duration<double, std::milli>(end - start).count();
             times_range.push_back(duration_range);
+            if (r == 0.01 && N == 100000) {
+                std::cout << "Range Query results of " << target_id << " for BF (r = " << r << ", N = " << N << "): ";
+                for (const auto &poi : ans) {
+                    std::cout << poi.id << " ";
+                }
+                std::cout << std::endl;
+            }
+            
         }
         range_times[N] = times_range;
     }
